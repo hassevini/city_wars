@@ -1,4 +1,4 @@
-// Compilação: gcc main.c character.c -o teste $(pkg-config allegro-5 allegro_main-5 allegro_font-5 allegro_primitives-5 --libs --cflags)
+// Compilação: gcc main.c character.c joystick.c -o teste $(pkg-config allegro-5 allegro_main-5 allegro_font-5 allegro_primitives-5 --libs --cflags)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +7,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "character.h"
+#include "joystick.h"
 
 #define X_SCREEN 640
 #define Y_SCREEN 640

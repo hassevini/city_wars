@@ -14,6 +14,7 @@ character *character_create(unsigned short width, unsigned short height, unsigne
     new_character->width = width;
     new_character->x = x;
     new_character->y = y;
+    new_character->control = joystick_create();
 
     return new_character;
 }
@@ -38,5 +39,6 @@ void character_move(character *element, unsigned short steps, unsigned short tra
 }
 
 void character_destroy(character *element){
+    joystick_destroy(element->control);
     free(element);
 }

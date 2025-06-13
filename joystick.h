@@ -2,10 +2,10 @@
 #define __JOYSTCIK__
 
 typedef struct {
-    unsigned short right;
-    unsigned short left;
-    unsigned short up;
-    unsigned short down;
+    unsigned char right;
+    unsigned char left;
+    unsigned char up;
+    unsigned char down;
 } joystick;
 
 joystick *joystick_create();

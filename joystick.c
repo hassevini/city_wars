@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "joystick.h"
 
-joystick *joystic_create(){
+joystick *joystick_create(){
     joystick *element = (joystick*) malloc(sizeof(joystick));
 
     if(!element)
@@ -11,6 +11,7 @@ joystick *joystic_create(){
     element->left = 0;
     element->up = 0;
     element->down = 0;
+    element->fire = 0;
 
     return element;
 }
@@ -29,6 +30,10 @@ void joystick_up(joystick *element){
 
 void joystick_down(joystick *element){
     element->down = element->down ^ 1;
+}
+
+void joystick_fire(joystick *element){
+    element->fire = element->fire ^ 1;
 }
 
 void joystick_destroy(joystick *element){

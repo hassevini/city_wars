@@ -1,4 +1,4 @@
-// Compilação: gcc main.c character.c joystick.c -o teste $(pkg-config allegro-5 allegro_main-5 allegro_font-5 allegro_primitives-5 --libs --cflags)
+// Compilação: gcc main.c character.c joystick.c gun.c bullet.c -o teste $(pkg-config allegro-5 allegro_main-5 allegro_font-5 allegro_primitives-5 --libs --cflags)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,8 +9,8 @@
 #include "character.h"
 #include "joystick.h"
 
-#define X_SCREEN 640
-#define Y_SCREEN 640
+#define X_SCREEN 1200
+#define Y_SCREEN 800
 
 int main(){
     al_init();
@@ -27,21 +27,79 @@ int main(){
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
-    character *player = character_create(20, 40, 10, Y_SCREEN-20, X_SCREEN, Y_SCREEN);
+    character *player = character_create(40, 80, 20, Y_SCREEN-40, X_SCREEN, Y_SCREEN, 1);
+
     if(!player)
         return 1;
 
     ALLEGRO_EVENT event;
     al_start_timer(timer);
 
-    while(1){
+    unsigned char menu = 1;
+    unsigned char game = 1;
+
+    // loop do menu
+    while(menu){
         al_wait_for_event(queue, &event);
 
         if(event.type == ALLEGRO_EVENT_TIMER){
             al_clear_to_color(al_map_rgb(0, 0, 0));
-            al_draw_filled_rectangle(player->x - player->width/2, player->y - player->height/2, player->x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
+
+            if(menu == 1){
+                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 30, Y_SCREEN/2 - 20, 0, "Começar Jogo");
+                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 30, Y_SCREEN/2 + 20, 0, "Sair");
+            }
+            else if(menu == 2){
+                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 30, Y_SCREEN/2 - 20, 0, "Começar Jogo");
+                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 30, Y_SCREEN/2 + 20, 0, "Sair");
+            }
+            
             al_flip_display();
         }
+        else if(event.type == ALLEGRO_EVENT_KEY_DOWN){
+            if(event.keyboard.keycode == ALLEGRO_KEY_DOWN)
+                menu = 2;
+            else if(event.keyboard.keycode == ALLEGRO_KEY_UP)
+                menu = 1;
+            else if(event.keyboard.keycode == ALLEGRO_KEY_ENTER){
+                if(menu == 2)
+                    game = 0;
+                menu = 0;
+            }
+        }
+        else if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
+            game = 0;
+            menu = 0;
+        }
+    }
+
+    // loop do jogo
+    while(game){
+        al_wait_for_event(queue, &event);
+
+        // atualiza a tela
+        if(event.type == ALLEGRO_EVENT_TIMER){
+            character_update_position(player, X_SCREEN, Y_SCREEN);
+            al_clear_to_color(al_map_rgb(0, 0, 0));
+            al_draw_filled_rectangle(player->x - player->width/2, player->y - player->height/2, player->x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
+            for(bullet *index = player->rifle->shots; index != NULL; index = (bullet*) index->next)
+                al_draw_filled_circle(index->x, index->y, 4, al_map_rgb(255, 0, 0));
+            if(player->rifle->timer)
+                player->rifle->timer--;
+            al_flip_display();
+        }
+        // detecta o uso das teclas
+        else if((event.type == ALLEGRO_EVENT_KEY_DOWN) ||(event.type == ALLEGRO_EVENT_KEY_UP)){
+            if(event.keyboard.keycode == ALLEGRO_KEY_UP)
+                joystick_up(player->control);
+            else if(event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
+                joystick_right(player->control);
+            else if(event.keyboard.keycode == ALLEGRO_KEY_LEFT)
+                joystick_left(player->control);
+            else if(event.keyboard.keycode == ALLEGRO_KEY_C)
+                joystick_fire(player->control);
+        }
+        // encerra o jogo
         else if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             break;
     }

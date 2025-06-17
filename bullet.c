@@ -13,7 +13,7 @@ bullet *bullet_create(unsigned short x, unsigned short y, unsigned char trajecto
     new_bullet->x = x;
     new_bullet->y = y;
     new_bullet->trajectory = trajectory;
-    new_bullet->next = (bullet*) next;
+    new_bullet->next = next;
 
     return new_bullet;
 }
@@ -27,7 +27,7 @@ void bullet_move(bullet *elements){
         else
             index->x = index->x + BULLET_MOVE;
             
-        index = (bullet*) index->next;
+        index = index->next;
     }
 }
 

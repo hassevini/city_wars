@@ -1,10 +1,10 @@
-// Compilação: gcc main.c character.c joystick.c gun.c bullet.c -o teste $(pkg-config allegro-5 allegro_main-5 allegro_font-5 allegro_primitives-5 --libs --cflags)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_image.h>
+#include <allegro5/allegro_ttf.h>
 
 #include "character.h"
 #include "joystick.h"
@@ -15,13 +15,19 @@
 int main(){
     al_init();
     al_init_primitives_addon();
+    al_init_image_addon();
+    al_init_font_addon();
+    al_init_ttf_addon();
 
     al_install_keyboard();
 
     ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    ALLEGRO_FONT *font = al_create_builtin_font();
+    ALLEGRO_FONT *font = al_load_ttf_font("assets/font.ttf", 64, 0);
     ALLEGRO_DISPLAY *disp = al_create_display(X_SCREEN, Y_SCREEN);
+    ALLEGRO_BITMAP *background = al_load_bitmap("assets/city1/10.png");
+
+    int bg_width = al_get_bitmap_width(background);
 
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(disp));
@@ -46,12 +52,12 @@ int main(){
             al_clear_to_color(al_map_rgb(0, 0, 0));
 
             if(menu == 1){
-                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 30, Y_SCREEN/2 - 20, 0, "Começar Jogo");
-                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 30, Y_SCREEN/2 + 20, 0, "Sair");
+                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 60, 0, "Iniciar Jogo");
+                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 80, Y_SCREEN/2 + 20, 0, "Sair");
             }
             else if(menu == 2){
-                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 30, Y_SCREEN/2 - 20, 0, "Começar Jogo");
-                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 30, Y_SCREEN/2 + 20, 0, "Sair");
+                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 80, Y_SCREEN/2 - 60, 0, "Iniciar Jogo");
+                al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 80, Y_SCREEN/2 + 20, 0, "Sair");
             }
             
             al_flip_display();
@@ -73,17 +79,25 @@ int main(){
         }
     }
 
+    unsigned int offset;
+
     // loop do jogo
     while(game){
         al_wait_for_event(queue, &event);
 
         // atualiza a tela
         if(event.type == ALLEGRO_EVENT_TIMER){
+            offset++;
+
+            if(offset >= bg_width)
+                offset = 0;
+
             character_update_position(player, X_SCREEN, Y_SCREEN);
-            al_clear_to_color(al_map_rgb(0, 0, 0));
+            al_draw_bitmap_region(background, offset, 400, X_SCREEN, Y_SCREEN, 0, 0, 0);
+            al_draw_bitmap_region(background, 0, 400, offset, Y_SCREEN, bg_width - offset, 0, 0);
             al_draw_filled_rectangle(player->x - player->width/2, player->y - player->height/2, player->x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
             for(bullet *index = player->rifle->shots; index != NULL; index = (bullet*) index->next)
-                al_draw_filled_circle(index->x, index->y, 4, al_map_rgb(255, 0, 0));
+                al_draw_filled_circle(index->x, index->y, 4, al_map_rgb(255, 255, 0));
             if(player->rifle->timer)
                 player->rifle->timer--;
             al_flip_display();

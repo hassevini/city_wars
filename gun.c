@@ -27,7 +27,7 @@ void gun_destroy(gun *element){
     bullet *next;
 
     while(index){
-        next = (bullet*) index->next;
+        next = index->next;
         bullet_destroy(index);
         index = next;
     }

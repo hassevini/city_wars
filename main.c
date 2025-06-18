@@ -122,9 +122,7 @@ int main(){
             }
 
             unsigned short draw_x = player->x - camera_x;
-
-            al_draw_filled_rectangle(draw_x - player->width/2, player->y - player->height/2, draw_x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
-
+            
             int frame_w = 110;
             int frame_h = 128;
             int sx = player->sprite_frame * frame_w;
@@ -133,7 +131,7 @@ int main(){
             int draw_w = frame_w * scale;
             int draw_h = frame_h * scale;
 
-            al_draw_scaled_bitmap(player_sprite, sx, 30, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+            al_draw_scaled_bitmap(player_sprite, sx+8, 30, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
 
             for(bullet *index = player->rifle->shots; index != NULL; index = (bullet*) index->next){
                 unsigned short bullet_draw_x = index->x - camera_x;

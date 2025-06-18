@@ -11,8 +11,15 @@ platform *platform_create(unsigned short x, unsigned short y, unsigned short wid
     new_platform->y = y;
     new_platform->width = width;
     new_platform->height = height;
+    new_platform->top = y + height/2;
 
     return new_platform;
+}
+
+void platform_colision(platform *object, character *player){
+    if((player->y - player->height/2 == object->top) && (player->x <= object->x + object->width/2) && (player->x >= object->x - object->width/2)){
+        
+    }
 }
 
 void platform_destroy(platform *element){

@@ -42,7 +42,7 @@ boss *boss_create(unsigned short x, unsigned short y, unsigned char face){
     if(!new_boss)
         return NULL;
     
-    new_boss->stats = (boss*) enemy_create(BOSS_WIDTH, BOSS_HEIGHT, x, y, BOSS_HP, face); 
+    new_boss->stats = (enemy*) enemy_create(BOSS_WIDTH, BOSS_HEIGHT, x, y, BOSS_HP, face); 
     return new_boss;
 }
 

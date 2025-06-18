@@ -8,10 +8,14 @@
 
 #include "character.h"
 #include "joystick.h"
+#include "platform.h"
+#include "enemy.h"
 
 #define X_SCREEN 1200
 #define Y_SCREEN 800
 #define MAX_X 12000
+
+
 
 int main(){
     al_init();
@@ -36,7 +40,7 @@ int main(){
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
-    character *player = character_create(40, 80, X_SCREEN/2, Y_SCREEN-40, X_SCREEN, Y_SCREEN, 1);
+    character *player = character_create(60, 100, X_SCREEN/2, Y_SCREEN-50, X_SCREEN, Y_SCREEN, 1);
 
     if(!player)
         return 1;
@@ -118,13 +122,18 @@ int main(){
             }
 
             unsigned short draw_x = player->x - camera_x;
+
             al_draw_filled_rectangle(draw_x - player->width/2, player->y - player->height/2, draw_x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
 
             int frame_w = 110;
             int frame_h = 128;
             int sx = player->sprite_frame * frame_w;
 
-            al_draw_bitmap_region(player_sprite, sx, 0, frame_w, frame_h, draw_x - frame_w / 2, player->y - frame_h / 2, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+            float scale = 1.5;
+            int draw_w = frame_w * scale;
+            int draw_h = frame_h * scale;
+
+            al_draw_scaled_bitmap(player_sprite, sx, 30, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
 
             for(bullet *index = player->rifle->shots; index != NULL; index = (bullet*) index->next){
                 unsigned short bullet_draw_x = index->x - camera_x;

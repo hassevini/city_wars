@@ -11,6 +11,7 @@
 
 #define X_SCREEN 1200
 #define Y_SCREEN 800
+#define MAX_X 12000
 
 int main(){
     al_init();
@@ -25,15 +26,17 @@ int main(){
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     ALLEGRO_FONT *font = al_load_ttf_font("assets/font.ttf", 64, 0);
     ALLEGRO_DISPLAY *disp = al_create_display(X_SCREEN, Y_SCREEN);
-    ALLEGRO_BITMAP *background = al_load_bitmap("assets/city1/10.png");
+    ALLEGRO_BITMAP *background = al_load_bitmap("assets/city/10.png");
+    ALLEGRO_BITMAP *player_sprite = al_load_bitmap("assets/player/Idle.png");
 
     int bg_width = al_get_bitmap_width(background);
+    unsigned short camera_x;
 
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(disp));
     al_register_event_source(queue, al_get_timer_event_source(timer));
 
-    character *player = character_create(40, 80, 20, Y_SCREEN-40, X_SCREEN, Y_SCREEN, 1);
+    character *player = character_create(40, 80, X_SCREEN/2, Y_SCREEN-40, X_SCREEN, Y_SCREEN, 1);
 
     if(!player)
         return 1;
@@ -79,7 +82,7 @@ int main(){
         }
     }
 
-    unsigned int offset;
+    unsigned short offset;
 
     // loop do jogo
     while(game){
@@ -87,17 +90,47 @@ int main(){
 
         // atualiza a tela
         if(event.type == ALLEGRO_EVENT_TIMER){
-            offset++;
 
-            if(offset >= bg_width)
-                offset = 0;
+            // Limita a câmera para não sair dos limites do cenário
+            if (player->x <= X_SCREEN / 2)
+                camera_x = 0;
+            else if (player->x >= MAX_X - X_SCREEN / 2)
+                camera_x = MAX_X - X_SCREEN;
+            else
+                camera_x = player->x - X_SCREEN / 2;
 
-            character_update_position(player, X_SCREEN, Y_SCREEN);
-            al_draw_bitmap_region(background, offset, 400, X_SCREEN, Y_SCREEN, 0, 0, 0);
-            al_draw_bitmap_region(background, 0, 400, offset, Y_SCREEN, bg_width - offset, 0, 0);
-            al_draw_filled_rectangle(player->x - player->width/2, player->y - player->height/2, player->x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
-            for(bullet *index = player->rifle->shots; index != NULL; index = (bullet*) index->next)
-                al_draw_filled_circle(index->x, index->y, 4, al_map_rgb(255, 255, 0));
+            offset = camera_x % bg_width;
+
+            character_update_position(player, MAX_X, Y_SCREEN);
+            character_update_bullets(player, camera_x, camera_x + X_SCREEN);
+            
+            int first_region_width = bg_width - offset;
+            if (first_region_width > X_SCREEN) 
+                first_region_width = X_SCREEN;
+
+            // Primeira parte da imagem (do offset até o fim da imagem)
+            al_draw_bitmap_region(background, offset, 400, first_region_width, Y_SCREEN, 0, 0, 0);
+
+            // Se necessário, desenha o restante da imagem a partir do começo
+            if (first_region_width < X_SCREEN) {
+                int remaining_width = X_SCREEN - first_region_width;
+                al_draw_bitmap_region(background, 0, 400, remaining_width, Y_SCREEN, first_region_width, 0, 0);
+            }
+
+            unsigned short draw_x = player->x - camera_x;
+            al_draw_filled_rectangle(draw_x - player->width/2, player->y - player->height/2, draw_x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
+
+            int frame_w = 110;
+            int frame_h = 128;
+            int sx = player->sprite_frame * frame_w;
+
+            al_draw_bitmap_region(player_sprite, sx, 0, frame_w, frame_h, draw_x - frame_w / 2, player->y - frame_h / 2, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+
+            for(bullet *index = player->rifle->shots; index != NULL; index = (bullet*) index->next){
+                unsigned short bullet_draw_x = index->x - camera_x;
+                al_draw_filled_circle(bullet_draw_x, index->y, 4, al_map_rgb(255, 255, 0));
+            }
+
             if(player->rifle->timer)
                 player->rifle->timer--;
             al_flip_display();

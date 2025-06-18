@@ -16,6 +16,9 @@ character *character_create(unsigned short width, unsigned short height, unsigne
     new_character->y = y;
     new_character->ground = 1;
     new_character->velocity_y = 0;
+    new_character->sprite_frame = 0;
+    new_character->sprite_frame_max = 7;
+    new_character->sprite_timer = 0;
     new_character->face = face;
     new_character->control = joystick_create();
     new_character->rifle = gun_create();
@@ -52,7 +55,7 @@ void character_move(character *element, unsigned short steps, unsigned short tra
     }
 }
 
-void character_update_bullets(character *player){
+void character_update_bullets(character *player, unsigned short min_x, unsigned short max_x){
     bullet *index = player->rifle->shots;
     bullet *previous = NULL;
 
@@ -64,7 +67,7 @@ void character_update_bullets(character *player){
         else if(index->trajectory == 1)
             index->x += BULLET_MOVE;
 
-        if((index->x < 0) || (index->x > X_SCREEN)){
+        if((index->x < min_x) || (index->x > max_x)){
             if(previous)
                 previous->next = (bullet*) next;
             else
@@ -111,8 +114,6 @@ void character_update_position(character *player, unsigned short max_x, unsigned
         character_shot(player);
         player->rifle->timer = PISTOL_COOLDOWN;
     }
-
-    character_update_bullets(player);
 }
 
 void character_shot(character *element){

@@ -22,6 +22,25 @@ bullet *gun_shot(unsigned short x, unsigned short y, unsigned char trajectory, g
     return new_bullet;
 }
 
+void gun_bullet_remove(gun *element, bullet *shot){
+    bullet *current = element->shots;
+    bullet *previous = NULL;
+
+    while (current) {
+        if (current == shot) {
+            if (previous)
+                previous->next = (bullet*) shot->next;
+            else
+                element->shots = (bullet*) shot->next;
+
+            free(shot);
+            break;
+        }
+        previous = current;
+        current = (bullet*) current->next;
+    }
+}
+
 void gun_destroy(gun *element){
     bullet *index = element->shots;
     bullet *next;

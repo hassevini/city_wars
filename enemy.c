@@ -14,20 +14,117 @@ enemy* enemy_create(unsigned short width, unsigned short height, unsigned short 
     new_enemy->y = y;
     new_enemy->hp = hp;
     new_enemy->face = face;
+
+    return new_enemy;
 }
 
 void enemy_destroy(enemy *element){
     free(element);
 }
 
-raider *raider_create(unsigned short x, unsigned short y, unsigned char face){
+raider *raider_create(unsigned short x, unsigned short y, unsigned short walk_range, unsigned char face){
     raider *new_raider = (raider*) malloc(sizeof(raider));
     
     if(!new_raider)
         return NULL;
-    
-    new_raider->stats = (enemy*) enemy_create(RAIDER_WIDTH, RAIDER_HEIGHT, x, y, RAIDER_HP, face); 
+
+    new_raider->x0 = x;
+    new_raider->y0 = y;
+    new_raider->walk_range = walk_range;
+    new_raider->shot_timer = 0;
+
+    new_raider->stats = (enemy*) enemy_create(RAIDER_WIDTH, RAIDER_HEIGHT, x, y, RAIDER_HP, face);
+    new_raider->rifle = (gun*) gun_create();
+
     return new_raider;
+}
+
+int raider_on_screen(raider *element, unsigned short min_x, unsigned short max_x){
+    if(element->stats->x + element->stats->width/2 > min_x)
+        return 1;
+    if(element->stats->x - element->stats->width/2 < max_x)
+        return 1;
+    
+    return 0;
+}
+
+int raider_detect_character(raider *element, character *player){
+    if((element->stats->y <= player->y + player->height/2) && (element->stats->y >= player->y - player->height/2)){
+        if(element->stats->face && element->stats->x < player->x)
+            return 1;
+        if(!element->stats->face && element->stats->x > player->x)
+            return 1;
+    }
+
+    return 0;
+}
+
+void raider_move(raider *element){
+    if(element->stats->face){
+        if(element->stats->x < element->x0 + element->walk_range){
+            element->stats->x += RAIDER_MOVE;
+        }
+        else{
+            element->stats->face = 0;
+            element->stats->x = element->x0 + element->walk_range;
+        }
+    }
+    else{
+        if(element->stats->x > element->x0 - element->walk_range){
+            element->stats->x -= RAIDER_MOVE;
+        }
+        else{
+            element->stats->face = 1;
+            element->stats->x = element->x0 - element->walk_range;
+        }
+    }
+}
+
+void raider_shot(raider *element){
+    bullet *shot;
+    // atira para a esquerda
+    if(!element->stats->face)
+        shot = gun_shot(element->stats->x - element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
+    // atira para a direita
+    else if(element->stats->face == 1)
+        shot = gun_shot(element->stats->x + element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
+    
+    if(shot){
+        element->rifle->shots = shot;
+        element->shot_timer = RAIDER_SHOT_DELAY;
+    }
+}
+
+int raider_hit_bullet(raider *element, bullet *shot){
+    return (shot->x > element->stats->x - element->stats->width/2) && (shot->x < element->stats->x + element->stats->width/2) && 
+    (shot->y > element->stats->y - element->stats->height/2) && (shot->y < element->stats->y + element->stats->height/2);
+}
+
+void raider_update_bullets(raider *element, unsigned short min_x, unsigned short max_x){
+    bullet *index = element->rifle->shots;
+    bullet *previous = NULL;
+
+    while(index){
+        bullet *next = (bullet*) index->next;
+
+        if(!index->trajectory)
+            index->x -= RAIDER_BULLET_MOVE;
+        else if(index->trajectory == 1)
+            index->x += RAIDER_BULLET_MOVE;
+
+        if((index->x < min_x) || (index->x > max_x)){
+            if(previous)
+                previous->next = (bullet*) next;
+            else
+                element->rifle->shots = next;
+
+            bullet_destroy(index);
+        } 
+        else 
+            previous = index;        
+
+        index = next;
+    }
 }
 
 void raider_destroy(raider *element){
@@ -44,6 +141,58 @@ boss *boss_create(unsigned short x, unsigned short y, unsigned char face){
     
     new_boss->stats = (enemy*) enemy_create(BOSS_WIDTH, BOSS_HEIGHT, x, y, BOSS_HP, face); 
     return new_boss;
+}
+
+void boss_shot(boss *element){
+    bullet *shot1, *shot2;
+
+    if(element->stage == 0){
+        if(!element->stats->face){
+            shot1 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
+            shot2 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y + element->stats->y/4, element->stats->face, element->rifle);
+        }
+        else if(element->stats->face == 1){
+            shot1 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
+            shot2 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y + element->stats->y/4, element->stats->face, element->rifle);
+        }
+    }
+    else if(element->stage == 1){
+        if(!element->stats->face){
+            shot1 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y - element->stats->y/4, element->stats->face, element->rifle);
+            shot2 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y + element->stats->y/4, element->stats->face, element->rifle);
+        }
+        else if(element->stats->face == 1){
+            shot1 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y - element->stats->y/4, element->stats->face, element->rifle);
+            shot2 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y + element->stats->y/4, element->stats->face, element->rifle);
+        }
+    }
+    else if(element->stage == 2){
+        if(!element->stats->face){
+            shot1 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
+            shot2 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y - element->stats->y/4, element->stats->face, element->rifle);
+        }
+        else if(element->stats->face == 1){
+            shot1 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
+            shot2 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y - element->stats->y/4, element->stats->face, element->rifle);
+        }
+    }
+
+    if(shot1){
+        shot1->next = element->rifle->shots;
+        element->rifle->shots = shot1;
+    }
+
+    if(shot2){
+        shot2->next = element->rifle->shots;
+        element->rifle->shots = shot2;
+    }
+
+    element->shot_timer = RAIDER_SHOT_DELAY;
+}
+
+int boss_hit_bullet(boss *element, bullet *shot){
+    return (shot->x > element->stats->x - element->stats->width/2) && (shot->x < element->stats->x + element->stats->width/2) && 
+    (shot->y > element->stats->y - element->stats->height/2) && (shot->y < element->stats->y + element->stats->height/2);
 }
 
 void boss_destroy(boss *element){

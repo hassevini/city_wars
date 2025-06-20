@@ -14,6 +14,7 @@ character *character_create(unsigned short width, unsigned short height, unsigne
     new_character->width = width;
     new_character->x = x;
     new_character->y = y;
+    new_character->hp = 5;
     new_character->ground = 1;
     new_character->velocity_y = 0;
     new_character->sprite_frame = 0;
@@ -127,6 +128,11 @@ void character_shot(character *element){
     
     if(shot)
         element->rifle->shots = shot;
+}
+
+int character_hit_bullet(character *player, bullet *shot){
+    return (shot->x > player->x - player->width/2) && (shot->x < player->x + player->width/2) && 
+    (shot->y > player->y - player->height/2) && (shot->y < player->y + player->height/2);
 }
 
 void character_destroy(character *element){

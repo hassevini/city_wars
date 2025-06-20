@@ -7,12 +7,14 @@
 #define X_SCREEN 1200
 #define Y_SCREEN 800
 #define CHARACTER_STEP 2
+#define CHARACTER_HP 5
 
 typedef struct {
     unsigned short height;
     unsigned short width;
     unsigned short x;
     unsigned short y;
+    unsigned short hp;
     unsigned short sprite_frame;
     unsigned short sprite_frame_max;
     unsigned short sprite_timer;
@@ -29,6 +31,7 @@ void character_update_bullets(character *player, unsigned short min_x, unsigned 
 void character_update_position(character *player, unsigned short max_x, unsigned short max_y);
 void character_update_frame(character *player);
 void character_shot(character *element);
+int character_hit_bullet(character *player, bullet *shot);
 void character_destroy(character *element);
 
 #endif

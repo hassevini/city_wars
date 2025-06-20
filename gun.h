@@ -12,6 +12,7 @@ typedef struct {
 
 gun *gun_create();
 bullet *gun_shot(unsigned short x, unsigned short y, unsigned char trajectory, gun *element);
+void gun_bullet_remove(gun *element, bullet *shot);
 void gun_destroy(gun *element);
 
 #endif

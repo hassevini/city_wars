@@ -2,7 +2,7 @@
 #include "bullet.h"
 
 bullet *bullet_create(unsigned short x, unsigned short y, unsigned char trajectory, bullet *next){
-    if(trajectory < 0 || trajectory > 1)
+    if(trajectory > 1)
         return NULL;
 
     bullet *new_bullet = (bullet*) malloc(sizeof(bullet));

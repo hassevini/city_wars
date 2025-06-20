@@ -12,7 +12,7 @@ typedef struct {
 } platform;
 
 platform *platform_create(unsigned short x, unsigned short y, unsigned short width, unsigned short height);
-void *platform_colision(platform *object, character *player);
-void *platform_destroy(platform *element);
+int platform_colision(platform *object, character *player);
+void platform_destroy(platform *element);
 
 #endif

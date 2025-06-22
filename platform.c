@@ -20,8 +20,8 @@ int platform_colision(platform *plat, character *player) {
     float player_bottom = player->y + player->height / 2;
 
     // Verifica se o jogador está dentro da largura da plataforma
-    if ((player->x <= plat->x + plat->width / 2) &&
-        (player->x >= plat->x - plat->width / 2)) {
+    if ((player->x - player->width/2 <= plat->x + plat->width / 2) &&
+        (player->x + player->width/2 >= plat->x - plat->width / 2)) {
 
         unsigned short player_bottom_before = player_bottom - player->velocity_y;
 

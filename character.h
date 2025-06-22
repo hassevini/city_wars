@@ -15,6 +15,7 @@ typedef struct {
     unsigned short x;
     unsigned short y;
     unsigned short hp;
+    unsigned short sprite;
     unsigned short sprite_frame;
     unsigned short sprite_frame_max;
     unsigned short sprite_timer;

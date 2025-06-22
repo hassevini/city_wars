@@ -17,7 +17,8 @@ character *character_create(unsigned short width, unsigned short height, unsigne
     new_character->hp = 5;
     new_character->ground = 1;
     new_character->velocity_y = 0;
-    new_character->sprite_frame = 0;
+    new_character->sprite = 0;
+    new_character->sprite_frame = 1;
     new_character->sprite_frame_max = 7;
     new_character->sprite_timer = 0;
     new_character->face = face;

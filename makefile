@@ -1,4 +1,4 @@
-TARGET = teste
+TARGET = city_wars
 SRC = main.c character.c joystick.c gun.c bullet.c platform.c enemy.c
 
 PKG = allegro-5 allegro_main-5 allegro_font-5 allegro_primitives-5 allegro_image-5 allegro_ttf-5

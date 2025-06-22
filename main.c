@@ -23,6 +23,10 @@
 #define BOSS_SCREEN_X (MAX_X - X_SCREEN)
 #define BOSS_TRIGGER_MARGIN 200
 #define BOSS_TRIGGER_ACTIVATION_X (BOSS_SCREEN_X + BOSS_TRIGGER_MARGIN)
+#define BOSS_BAR_WIDTH 600
+#define BOSS_BAR_HEIGHT 30
+#define BOSS_BAR_X ((X_SCREEN - BOSS_BAR_WIDTH) / 2)
+#define BOSS_BAR_Y 30
 
 ALLEGRO_BITMAP **init_player_sprites(){
     ALLEGRO_BITMAP **player_sprites = malloc(sizeof(ALLEGRO_BITMAP*)*N_PLAYER_SPRITES);
@@ -147,7 +151,7 @@ int main(){
     ALLEGRO_EVENT event;
     al_start_timer(timer);
 
-    unsigned char menu = 1, game = 1, win = 0, boss_fight = 0;
+    unsigned char menu = 1, game = 1, win = 0, boss_fight = 0, pause = 0;
     unsigned short offset = 0;
 
     // loop do menu
@@ -207,205 +211,222 @@ int main(){
 
         // atualiza a tela
         if(event.type == ALLEGRO_EVENT_TIMER){
-            character_update_sprite(player);
+            if(!pause){
+                character_update_sprite(player);
 
-            // Verifica se ainda há raiders vivos
-            int raiders_vivos = 0;
-            for(int i = 0; i < N_RAIDERS; i++){
-                if(raiders[i]){
-                    raiders_vivos++;
+                // Verifica se ainda há raiders vivos
+                int raiders_vivos = 0;
+                for(int i = 0; i < N_RAIDERS; i++){
+                    if(raiders[i]){
+                        raiders_vivos++;
+                    }
                 }
-            }
 
-            // Ativa a boss fight se o jogador entrou na área após eliminar os raiders
-            if (!boss_fight && !raiders_vivos && player->x >= BOSS_TRIGGER_ACTIVATION_X)
-                boss_fight = 1;
+                // Ativa a boss fight se o jogador entrou na área após eliminar os raiders
+                if (!boss_fight && !raiders_vivos && player->x >= BOSS_TRIGGER_ACTIVATION_X)
+                    boss_fight = 1;
 
-            // Calcula a câmera
-            if (boss_fight) {
-                camera_x = BOSS_SCREEN_X;
-            } else {
-                if (player->x <= X_SCREEN / 2)
-                    camera_x = 0;
-                else if (player->x >= MAX_X - X_SCREEN / 2)
-                    camera_x = MAX_X - X_SCREEN;
-                else
-                    camera_x = player->x - X_SCREEN / 2;
-            }
-
-            // Limita o movimento horizontal do jogador
-            if (boss_fight) {
-                if (player->x < BOSS_SCREEN_X + player->width / 2)
-                    player->x = BOSS_SCREEN_X + player->width / 2;
-                if (player->x > BOSS_SCREEN_X + X_SCREEN - player->width / 2)
-                    player->x = BOSS_SCREEN_X + X_SCREEN - player->width / 2;
-            } else {
-                if (raiders_vivos && player->x > BOSS_TRIGGER_ACTIVATION_X)
-                    player->x = BOSS_TRIGGER_ACTIVATION_X;
-            }
-
-            offset = camera_x % bg_width;
-            
-            // reseta antes de testar colisão
-            player->ground = 0; 
-
-            // Testa colisão com plataformas suspensas
-            for (int i = 0; i < N_PLATFORMS; i++) {
-                if (platform_colision(platforms[i], player)) {
-                    break;
+                // Calcula a câmera
+                if (boss_fight) {
+                    camera_x = BOSS_SCREEN_X;
+                } else {
+                    if (player->x <= X_SCREEN / 2)
+                        camera_x = 0;
+                    else if (player->x >= MAX_X - X_SCREEN / 2)
+                        camera_x = MAX_X - X_SCREEN;
+                    else
+                        camera_x = player->x - X_SCREEN / 2;
                 }
-            }
 
-            // Verifica contato com o chão do mundo
-            if (player->y + player->height / 2 >= Y_SCREEN-GROUND_HEIGHT) {
-                player->y = Y_SCREEN - GROUND_HEIGHT - player->height / 2;
-                player->velocity_y = 0;
-                player->ground = 1;
-            }
+                // Limita o movimento horizontal do jogador
+                if (boss_fight) {
+                    if (player->x < BOSS_SCREEN_X + player->width / 2)
+                        player->x = BOSS_SCREEN_X + player->width / 2;
+                    if (player->x > BOSS_SCREEN_X + X_SCREEN - player->width / 2)
+                        player->x = BOSS_SCREEN_X + X_SCREEN - player->width / 2;
+                } else {
+                    if (raiders_vivos && player->x > BOSS_TRIGGER_ACTIVATION_X)
+                        player->x = BOSS_TRIGGER_ACTIVATION_X;
+                }
 
-            character_update_position(player, MAX_X, Y_SCREEN-20);
+                offset = camera_x % bg_width;
+                
+                // reseta antes de testar colisão
+                player->ground = 0; 
 
-            character_update_bullets(player, camera_x, camera_x + X_SCREEN);
+                // Testa colisão com plataformas suspensas
+                for (int i = 0; i < N_PLATFORMS; i++) {
+                    if (platform_colision(platforms[i], player)) {
+                        break;
+                    }
+                }
 
-            // Controla os raiders
-            for(int i = 0; i < N_RAIDERS; i++){
-                if(!raiders[i]) 
-                    continue;
+                // Verifica contato com o chão do mundo
+                if (player->y + player->height / 2 >= Y_SCREEN-GROUND_HEIGHT) {
+                    player->y = Y_SCREEN - GROUND_HEIGHT - player->height / 2;
+                    player->velocity_y = 0;
+                    player->ground = 1;
+                }
 
-                if(raider_on_screen(raiders[i], camera_x, camera_x + X_SCREEN)){
-                    if(raider_detect_character(raiders[i], player)){
-                        if(!raiders[i]->shot_timer){
-                            raider_shot(raiders[i]);
-                            raiders[i]->sprite = 1;
+                character_update_position(player, MAX_X, Y_SCREEN-20);
+
+                character_update_bullets(player, camera_x, camera_x + X_SCREEN);
+
+                // Controla os raiders
+                for(int i = 0; i < N_RAIDERS; i++){
+                    if(!raiders[i]) 
+                        continue;
+
+                    if(raider_on_screen(raiders[i], camera_x, camera_x + X_SCREEN)){
+                        if(raider_detect_character(raiders[i], player)){
+                            if(!raiders[i]->shot_timer){
+                                raider_shot(raiders[i]);
+                                raiders[i]->sprite = 1;
+                            }
+                        }
+                        else{
+                            raider_move(raiders[i]);
+                            raiders[i]->sprite = 0;
                         }
                     }
+                    raider_update_bullets(raiders[i], camera_x, camera_x + X_SCREEN);
+                    
+                    if(raiders[i]->shot_timer)
+                        raiders[i]->shot_timer--;
+                }
+
+                if(boss_fight){
+                    if(!final_boss->shot_timer){
+                        boss_shot(final_boss);
+                        final_boss->sprite = 1;
+                        final_boss->stage = (final_boss->stage+1)%BOSS_N_STATES;
+                        final_boss->sprite_timer = BOSS_SPRITE_DELAY;
+                    }
                     else{
-                        raider_move(raiders[i]);
-                        raiders[i]->sprite = 0;
+                        if(!final_boss->sprite_timer)
+                            final_boss->sprite = 0;
+                        else
+                            final_boss->sprite_timer--;
+                        final_boss->shot_timer--;
                     }
                 }
-                raider_update_bullets(raiders[i], camera_x, camera_x + X_SCREEN);
-                
-                if(raiders[i]->shot_timer)
-                    raiders[i]->shot_timer--;
-            }
 
-            if(boss_fight){
-                if(!final_boss->shot_timer){
-                    boss_shot(final_boss);
-                    final_boss->sprite = 1;
-                    final_boss->stage = (final_boss->stage+1)%BOSS_N_STATES;
-                    final_boss->sprite_timer = BOSS_SPRITE_DELAY;
+                boss_update_bullets(final_boss, camera_x, camera_x + X_SCREEN);
+
+                int first_region_width = bg_width - offset;
+                if (first_region_width > X_SCREEN) 
+                    first_region_width = X_SCREEN;
+
+                // Primeira parte da imagem (do offset até o fim da imagem)
+                al_draw_bitmap_region(background, offset, 400, first_region_width, Y_SCREEN, 0, 0, 0);
+
+                // Se necessário, desenha o restante da imagem a partir do começo
+                if (first_region_width < X_SCREEN) {
+                    int remaining_width = X_SCREEN - first_region_width;
+                    al_draw_bitmap_region(background, 0, 400, remaining_width, Y_SCREEN, first_region_width, 0, 0);
                 }
+
+                for (int x = 0; x < X_SCREEN; x += tile_w) {
+                    al_draw_bitmap(ground_tile, x, Y_SCREEN - 20, 0);
+                }
+
+                al_draw_textf(font, al_map_rgb(255, 165, 0), 30, 20, 0, "HP: %d", player->hp);
+                if(!boss_fight)
+                    al_draw_textf(font, al_map_rgb(255, 165, 0), 400, 20, 0, "Inimigos Restantes: %d", raiders_vivos);
                 else{
-                    if(!final_boss->sprite_timer)
-                        final_boss->sprite = 0;
+                    float hp_percent = (float)final_boss->stats->hp / BOSS_HP;
+                    int current_width = hp_percent * BOSS_BAR_WIDTH;
+                    al_draw_filled_rectangle(BOSS_BAR_X, BOSS_BAR_Y, BOSS_BAR_X + BOSS_BAR_WIDTH, BOSS_BAR_Y + BOSS_BAR_HEIGHT, al_map_rgb(50, 50, 50));
+                    al_draw_filled_rectangle(BOSS_BAR_X, BOSS_BAR_Y, BOSS_BAR_X + current_width, BOSS_BAR_Y + BOSS_BAR_HEIGHT, al_map_rgb(255, 165, 0));
+                    al_draw_rectangle(BOSS_BAR_X, BOSS_BAR_Y, BOSS_BAR_X + BOSS_BAR_WIDTH, BOSS_BAR_Y + BOSS_BAR_HEIGHT, al_map_rgb(255, 255, 255), 2.0);
+                }
+
+
+                draw_x = player->x - camera_x;
+                
+                int frame_w = 126;
+                int frame_h = 128;
+                int sx = player->sprite_frame * frame_w;
+
+                float scale = 2.0;
+                int draw_w = frame_w * scale;
+                int draw_h = frame_h * scale;
+                //al_draw_filled_rectangle(draw_x - player->width/2, player->y - player->height/2, draw_x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
+                al_draw_scaled_bitmap(player_sprites[player->sprite], sx, 28, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+
+                draw_x = final_boss->stats->x - final_boss->stats->width/2 - camera_x;
+                draw_y = final_boss->stats->y - final_boss->stats->height/2;
+                //al_draw_filled_rectangle(draw_x, draw_y, draw_x + final_boss->stats->width, draw_y + final_boss->stats->height, al_map_rgb(255, 0, 0));
+                al_draw_scaled_bitmap(boss_sprites[final_boss->sprite], 230, 28, 110, frame_h, draw_x - 50, final_boss->stats->y - draw_h, 2*272, 2*draw_h, final_boss->stats->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+
+                // desenha as plataformas
+                for (int i = 0; i < N_PLATFORMS; i++) {
+                    int start_x = platforms[i]->x - platforms[i]->width / 2 - camera_x;
+                    int start_y = platforms[i]->y - platforms[i]->height / 2;
+
+                    int tiles_horizontal = (platforms[i]->width + tile_w - 1) / tile_w;  // ceil para garantir cobertura completa
+
+                    for (int tx = 0; tx < tiles_horizontal; tx++) {
+                        int draw_x = start_x + tx * tile_w;
+                        int draw_y = start_y;
+
+                        al_draw_bitmap(platform_tile, draw_x, draw_y, 0);
+                    }
+                }     
+
+                game = raiders_bullets_collision(player, raiders, N_RAIDERS);
+
+                // desenha os raiders e suas balas
+                for(int i = 0; i < N_RAIDERS; i++){
+                    if(!raiders[i])
+                        continue;
+
+                    draw_x = raiders[i]->stats->x - raiders[i]->stats->width / 2 - camera_x;
+                    draw_y = raiders[i]->stats->y - raiders[i]->stats->height / 2;
+
+                    //al_draw_filled_rectangle(draw_x, draw_y, draw_x + raiders[i]->stats->width, draw_y + raiders[i]->stats->height, al_map_rgb(0, 255, 0));
+                    if(!raiders[i]->sprite)
+                        al_draw_scaled_bitmap(raider_sprites[raiders[i]->sprite], 272, 28, 90, frame_h, draw_x - 100, raiders[i]->stats->y - draw_h / 2, 272, draw_h, raiders[i]->stats->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
                     else
-                        final_boss->sprite_timer--;
-                    final_boss->shot_timer--;
+                        al_draw_scaled_bitmap(raider_sprites[raiders[i]->sprite], 240, 28, 90, frame_h, draw_x - 100, raiders[i]->stats->y - draw_h / 2, 272, draw_h, raiders[i]->stats->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+
+                    for(bullet *index = raiders[i]->rifle->shots; index != NULL; index = index->next){
+                        unsigned short bullet_draw_x = index->x - camera_x;
+                        al_draw_scaled_bitmap(bullet_sprite, 350, 100, 60, 75, bullet_draw_x - 10, index->y - 10, 40, 20, index->trajectory ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+                    }
                 }
-            }
 
-            boss_update_bullets(final_boss, camera_x, camera_x + X_SCREEN);
+                boss_bullets_collision(player, final_boss);
 
-            int first_region_width = bg_width - offset;
-            if (first_region_width > X_SCREEN) 
-                first_region_width = X_SCREEN;
-
-            // Primeira parte da imagem (do offset até o fim da imagem)
-            al_draw_bitmap_region(background, offset, 400, first_region_width, Y_SCREEN, 0, 0, 0);
-
-            // Se necessário, desenha o restante da imagem a partir do começo
-            if (first_region_width < X_SCREEN) {
-                int remaining_width = X_SCREEN - first_region_width;
-                al_draw_bitmap_region(background, 0, 400, remaining_width, Y_SCREEN, first_region_width, 0, 0);
-            }
-
-            for (int x = 0; x < X_SCREEN; x += tile_w) {
-                al_draw_bitmap(ground_tile, x, Y_SCREEN - 20, 0);
-            }
-
-            al_draw_textf(font, al_map_rgb(255, 165, 0), 30, 20, 0, "HP: %d", player->hp);
-            al_draw_textf(font, al_map_rgb(255, 165, 0), 400, 20, 0, "Inimigos Restantes: %d", raiders_vivos);
-
-            draw_x = player->x - camera_x;
-            
-            int frame_w = 126;
-            int frame_h = 128;
-            int sx = player->sprite_frame * frame_w;
-
-            float scale = 2.0;
-            int draw_w = frame_w * scale;
-            int draw_h = frame_h * scale;
-            //al_draw_filled_rectangle(draw_x - player->width/2, player->y - player->height/2, draw_x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
-            al_draw_scaled_bitmap(player_sprites[player->sprite], sx, 28, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
-
-            draw_x = final_boss->stats->x - final_boss->stats->width/2 - camera_x;
-            draw_y = final_boss->stats->y - final_boss->stats->height/2;
-            //al_draw_filled_rectangle(draw_x, draw_y, draw_x + final_boss->stats->width, draw_y + final_boss->stats->height, al_map_rgb(255, 0, 0));
-            al_draw_scaled_bitmap(boss_sprites[final_boss->sprite], 230, 28, 110, frame_h, draw_x - 50, final_boss->stats->y - draw_h, 2*272, 2*draw_h, final_boss->stats->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
-
-            // desenha as plataformas
-            for (int i = 0; i < N_PLATFORMS; i++) {
-                int start_x = platforms[i]->x - platforms[i]->width / 2 - camera_x;
-                int start_y = platforms[i]->y - platforms[i]->height / 2;
-
-                int tiles_horizontal = (platforms[i]->width + tile_w - 1) / tile_w;  // ceil para garantir cobertura completa
-
-                for (int tx = 0; tx < tiles_horizontal; tx++) {
-                    int draw_x = start_x + tx * tile_w;
-                    int draw_y = start_y;
-
-                    al_draw_bitmap(platform_tile, draw_x, draw_y, 0);
-                }
-            }     
-
-            game = raiders_bullets_collision(player, raiders, N_RAIDERS);
-
-            // desenha os raiders e suas balas
-            for(int i = 0; i < N_RAIDERS; i++){
-                if(!raiders[i])
-                    continue;
-
-                draw_x = raiders[i]->stats->x - raiders[i]->stats->width / 2 - camera_x;
-                draw_y = raiders[i]->stats->y - raiders[i]->stats->height / 2;
-
-                //al_draw_filled_rectangle(draw_x, draw_y, draw_x + raiders[i]->stats->width, draw_y + raiders[i]->stats->height, al_map_rgb(0, 255, 0));
-                if(!raiders[i]->sprite)
-                    al_draw_scaled_bitmap(raider_sprites[raiders[i]->sprite], 272, 28, 90, frame_h, draw_x - 100, raiders[i]->stats->y - draw_h / 2, 272, draw_h, raiders[i]->stats->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
-                else
-                    al_draw_scaled_bitmap(raider_sprites[raiders[i]->sprite], 240, 28, 90, frame_h, draw_x - 100, raiders[i]->stats->y - draw_h / 2, 272, draw_h, raiders[i]->stats->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
-
-                for(bullet *index = raiders[i]->rifle->shots; index != NULL; index = index->next){
+                // desenha as balas do boss
+                for(bullet *index = final_boss->rifle->shots; index != NULL; index = index->next){
                     unsigned short bullet_draw_x = index->x - camera_x;
                     al_draw_scaled_bitmap(bullet_sprite, 350, 100, 60, 75, bullet_draw_x - 10, index->y - 10, 40, 20, index->trajectory ? 0 : ALLEGRO_FLIP_HORIZONTAL);
                 }
-            }
+                
+                player_bullets_collision_raiders(player, raiders, N_RAIDERS);
+                win = player_bullets_collision_boss(player, final_boss);
 
-            boss_bullets_collision(player, final_boss);
+                if(win){
+                    break;
+                }
+                
+                // desenha as balas do player
+                for(bullet *index = player->rifle->shots; index != NULL; index = index->next){
+                    unsigned short bullet_draw_x = index->x - camera_x;
+                    al_draw_scaled_bitmap(bullet_sprite, 350, 100, 60, 75, bullet_draw_x - 10, index->y - 10, 40, 20, index->trajectory ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+                }
 
-            // desenha as balas do boss
-            for(bullet *index = final_boss->rifle->shots; index != NULL; index = index->next){
-                unsigned short bullet_draw_x = index->x - camera_x;
-                al_draw_scaled_bitmap(bullet_sprite, 350, 100, 60, 75, bullet_draw_x - 10, index->y - 10, 40, 20, index->trajectory ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+                if(player->rifle->timer)
+                    player->rifle->timer--;
+                al_flip_display();
             }
-            
-            player_bullets_collision_raiders(player, raiders, N_RAIDERS);
-            win = player_bullets_collision_boss(player, final_boss);
-
-            if(win){
-                break;
+            else{
+                al_draw_filled_rectangle(0, 0, X_SCREEN, Y_SCREEN, al_map_rgba(0, 0, 0, 128));
+                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN / 2, Y_SCREEN / 2 - 40, ALLEGRO_ALIGN_CENTER, "PAUSADO");
+                al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN / 2, Y_SCREEN / 2 + 40, ALLEGRO_ALIGN_CENTER, "Pressione ENTER para continuar");
+                al_flip_display();
             }
-            
-            // desenha as balas do player
-            for(bullet *index = player->rifle->shots; index != NULL; index = index->next){
-                unsigned short bullet_draw_x = index->x - camera_x;
-                al_draw_scaled_bitmap(bullet_sprite, 350, 100, 60, 75, bullet_draw_x - 10, index->y - 10, 40, 20, index->trajectory ? 0 : ALLEGRO_FLIP_HORIZONTAL);
-            }
-
-            if(player->rifle->timer)
-                player->rifle->timer--;
-            al_flip_display();
         }
         // detecta o uso das teclas
         else if((event.type == ALLEGRO_EVENT_KEY_DOWN) || (event.type == ALLEGRO_EVENT_KEY_UP)){
@@ -415,8 +436,14 @@ int main(){
                 joystick_right(player->control);
             else if(event.keyboard.keycode == ALLEGRO_KEY_LEFT)
                 joystick_left(player->control);
+            else if(event.keyboard.keycode == ALLEGRO_KEY_DOWN)
+                joystick_down(player->control);
             else if(event.keyboard.keycode == ALLEGRO_KEY_C)
                 joystick_fire(player->control);
+            else if(!pause && event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+                pause = 1;
+            else if(pause && event.keyboard.keycode == ALLEGRO_KEY_ENTER)
+                pause = 0;
         }
         // encerra o jogo
         else if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
@@ -431,11 +458,11 @@ int main(){
                 al_clear_to_color(al_map_rgb(0, 0, 0));
                 
                 if(win){
-                    al_draw_text(font, al_map_rgb(0, 255, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 180, 0, "GANHOU!");
+                    al_draw_text(font, al_map_rgb(0, 255, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 40, 0, "GANHOU!");
                     al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 250, Y_SCREEN/2 + 40, 0, "Pressione ENTER para sair");
                 }
                 else{
-                    al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 180, 0, "GAME OVER");
+                    al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 40, 0, "GAME OVER");
                     al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 250, Y_SCREEN/2 + 40, 0, "Pressione ENTER para sair");
                 }
                 al_flip_display();

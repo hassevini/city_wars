@@ -177,14 +177,12 @@ void player_bullets_collision_raiders(character *player, raider **raiders, unsig
         next = (bullet*) index->next;                
 
         for(int i = 0; i < n_raiders; i++){
-            if(!raiders[i])
+            if(!raiders[i]->stats->hp)
                 continue;
                     
             if(raider_hit_bullet(raiders[i], index)){
-                if(raiders[i]->stats->hp == 1){
-                    raider_destroy(raiders[i]);
-                    raiders[i] = NULL;
-                }
+                if(raiders[i]->stats->hp <= 1)
+                    raiders[i]->stats->hp = 0;
                 else
                     raiders[i]->stats->hp--;
 
@@ -297,10 +295,10 @@ int boss_collision(boss *element, character *player) {
 
     // Verifica colisão
     if(boss_right > player_left && boss_left < player_right && boss_bottom > player_top && boss_top < player_bottom){
-        return 1; // Há colisão
+        return 1;
     }
 
-    return 0; // Sem colisão
+    return 0;
 }
 
 int boss_hit_bullet(boss *element, bullet *shot){

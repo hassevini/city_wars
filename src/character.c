@@ -22,6 +22,7 @@ character *character_create(unsigned short width, unsigned short height, unsigne
     new_character->sprite_frame_max = 7;
     new_character->sprite_timer = 0;
     new_character->face = face;
+    new_character->crouching = 0;
     new_character->control = joystick_create();
     new_character->rifle = gun_create();
 
@@ -116,6 +117,21 @@ void character_update_position(character *player, unsigned short max_x, unsigned
         character_shot(player);
         player->rifle->timer = PISTOL_COOLDOWN;
     }
+
+    // Sistema de crouch
+    if(player->control->down && player->ground){
+        if(!player->crouching){
+            player->crouching = 1;
+            player->height = 80;
+            player->y += 30; // Agacha
+        }
+    } else {
+        if(player->crouching){
+            player->crouching = 0;
+            player->height = 140;
+            player->y -= 30; // Levanta
+        }
+}
 }
 
 void character_shot(character *element){

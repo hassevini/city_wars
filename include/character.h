@@ -22,6 +22,7 @@ typedef struct {
     short velocity_y;
     unsigned char ground;
     unsigned char face;
+    unsigned char crouching;
     joystick *control;
     gun *rifle;
 } character;

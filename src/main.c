@@ -17,7 +17,7 @@
 #define MAX_X 6000
 #define N_PLATFORMS 6
 #define N_RAIDERS 6
-#define N_PLAYER_SPRITES 4
+#define N_PLAYER_SPRITES 5
 #define N_RAIDER_SPRITES 2
 #define N_BOSS_SPRITES 2
 #define BOSS_SCREEN_X (MAX_X - X_SCREEN)
@@ -38,6 +38,7 @@ ALLEGRO_BITMAP **init_player_sprites(){
     player_sprites[1] = al_load_bitmap("assets/player/Jump.png");
     player_sprites[2] = al_load_bitmap("assets/player/Walk.png");
     player_sprites[3] = al_load_bitmap("assets/player/Shot.png");
+    player_sprites[4] = al_load_bitmap("assets/player/Crouch1.png");
 
     return player_sprites;
 }
@@ -67,7 +68,9 @@ ALLEGRO_BITMAP **init_boss_sprites(){
 }
 
 void character_update_sprite(character *player){
-    if(player->control->fire)
+    if(player->crouching && player->ground)
+        player->sprite = 4;
+    else if(player->control->fire)
         player->sprite = 3;
     else if(player->control->up || !player->ground)
         player->sprite = 1;
@@ -84,8 +87,8 @@ platform **init_platforms(){
         return NULL;
 
     platforms[0] = platform_create(900, Y_SCREEN-170, 400, 20);
-    platforms[1] = platform_create(2600, Y_SCREEN-320, 600, 20);
-    platforms[2] = platform_create(2200, Y_SCREEN-170, 400, 20);
+    platforms[1] = platform_create(2200, Y_SCREEN-170, 400, 20);
+    platforms[2] = platform_create(2600, Y_SCREEN-320, 600, 20);
     platforms[3] = platform_create(3100, Y_SCREEN-170, 400, 20);
     platforms[4] = platform_create(4000, Y_SCREEN-170, 400, 20);
     platforms[5] = platform_create(4200, Y_SCREEN-320, 400, 20);
@@ -101,7 +104,7 @@ raider **init_raiders(){
     
     raiders[0] = raider_create(900, Y_SCREEN - RAIDER_HEIGHT/2 - 182, 100, 0);
     raiders[1] = raider_create(2200, Y_SCREEN - RAIDER_HEIGHT/2 - 182, 100, 0);
-    raiders[2] = raider_create(2300, Y_SCREEN - RAIDER_HEIGHT/2 - GROUND_HEIGHT, 100, 0);
+    raiders[2] = raider_create(3100, Y_SCREEN - RAIDER_HEIGHT/2 - GROUND_HEIGHT, 100, 0);
     raiders[3] = raider_create(3100, Y_SCREEN - RAIDER_HEIGHT/2 - 182, 100, 0);
     raiders[4] = raider_create(4000, Y_SCREEN - RAIDER_HEIGHT/2 - 182, 100, 0);
     raiders[5] = raider_create(4200, Y_SCREEN - RAIDER_HEIGHT/2 - 322, 100, 0);
@@ -151,7 +154,7 @@ int main(){
     ALLEGRO_EVENT event;
     al_start_timer(timer);
 
-    unsigned char menu = 1, game = 1, win = 0, boss_fight = 0, pause = 0;
+    unsigned char menu = 1, game = 1, win = 0, boss_fight = 0, pause = 0, difficulty = 1, difficulty_menu = 0;
     unsigned short offset = 0;
 
     // loop do menu
@@ -166,37 +169,85 @@ int main(){
                 first_region_width = X_SCREEN;
 
             al_draw_bitmap_region(background, offset, 0, first_region_width, Y_SCREEN, 0, 0, 0);
-        
+
             if (first_region_width < X_SCREEN) {
                 int remaining_width = X_SCREEN - first_region_width;
                 al_draw_bitmap_region(background, 0, 0, remaining_width, Y_SCREEN, first_region_width, 0, 0);
             }
 
-            al_draw_bitmap(logo1, 80, 10, 0);
-            al_draw_bitmap(logo2, 540, 50, 0);
+            // menu principal
+            if(!difficulty_menu){            
+                al_draw_bitmap(logo1, 80, 10, 0);
+                al_draw_bitmap(logo2, 540, 50, 0);
 
-            if(menu == 1){
-                al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 80, Y_SCREEN/2 + 20, 0, "Iniciar Jogo");
-                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 80, Y_SCREEN/2 + 100, 0, "Sair");
+                if(menu == 1){
+                    al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 100, Y_SCREEN/2, 0, "Iniciar Jogo");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 180, Y_SCREEN/2 + 70, 0, "Escolher Dificuldade");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 30, Y_SCREEN/2 + 140, 0, "Sair");
+                }
+                else if(menu == 2){
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 100, Y_SCREEN/2 + 0, 0, "Iniciar Jogo");
+                    al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 180, Y_SCREEN/2 + 70, 0, "Escolher Dificuldade");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 30, Y_SCREEN/2 + 140, 0, "Sair");
+                }
+                else if(menu == 3){
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 100, Y_SCREEN/2, 0, "Iniciar Jogo");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 180, Y_SCREEN/2 + 70, 0, "Escolher Dificuldade");
+                    al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 30, Y_SCREEN/2 + 140, 0, "Sair");
+                }
             }
-            else if(menu == 2){
-                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 80, Y_SCREEN/2 + 20, 0, "Iniciar Jogo");
-                al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 80, Y_SCREEN/2 + 100, 0, "Sair");
+            // menu de escolha de dificuldade
+            else{
+                al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 200, Y_SCREEN/2 - 200, 0, "Escolha a Dificuldade:");
+                if(menu == 1){
+                    al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 60, Y_SCREEN/2 - 80, 0, "Fácil");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 60, Y_SCREEN/2, 0, "Médio");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 60, Y_SCREEN/2 + 80, 0, "Difícil");
+                }
+                else if(menu == 2){
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 60, Y_SCREEN/2 - 80, 0, "Fácil");
+                    al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 60, Y_SCREEN/2, 0, "Médio");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 60, Y_SCREEN/2 + 80, 0, "Difícil");
+                }
+                else if(menu == 3){
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 60, Y_SCREEN/2 - 80, 0, "Fácil");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 60, Y_SCREEN/2, 0, "Médio");
+                    al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN/2 - 60, Y_SCREEN/2 + 80, 0, "Difícil");
+                }
             }
-            
             offset = (offset + 1)%bg_width;
 
             al_flip_display();
         }
         else if(event.type == ALLEGRO_EVENT_KEY_DOWN){
-            if(event.keyboard.keycode == ALLEGRO_KEY_DOWN)
-                menu = 2;
-            else if(event.keyboard.keycode == ALLEGRO_KEY_UP)
-                menu = 1;
+            if(event.keyboard.keycode == ALLEGRO_KEY_DOWN){
+                menu++;
+                if(menu > 3)
+                    menu = 3;
+            }
+            else if(event.keyboard.keycode == ALLEGRO_KEY_UP){
+                menu--;
+                if(menu < 1)
+                    menu = 1;
+            }
             else if(event.keyboard.keycode == ALLEGRO_KEY_ENTER){
-                if(menu == 2)
-                    game = 0;
-                menu = 0;
+                if(!difficulty_menu){
+                    if(menu == 1)
+                        menu = 0;
+                    else if(menu == 2){
+                        menu = 1;
+                        difficulty_menu = 1;
+                    }
+                    else if(menu == 3){
+                        game = 0;
+                        menu = 0;
+                    }    
+                }
+                else{
+                    difficulty = menu;
+                    difficulty_menu = 0;
+                    menu = 1;
+                }
             }
         }
         else if(event.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
@@ -303,12 +354,23 @@ int main(){
                         final_boss->sprite_timer = BOSS_SPRITE_DELAY;
                     }
                     else{
-                        if(!final_boss->sprite_timer)
+                        if(!final_boss->sprite_timer){
                             final_boss->sprite = 0;
+                            boss_move(final_boss);
+                        }
                         else
                             final_boss->sprite_timer--;
                         final_boss->shot_timer--;
                     }
+                }
+
+                if(boss_collision(final_boss, player)){
+                    if(player->hp <= 1){
+                        player->hp = 0;
+                        game = 0;
+                    }
+                    else
+                        player->hp--;
                 }
 
                 boss_update_bullets(final_boss, camera_x, camera_x + X_SCREEN);
@@ -326,6 +388,7 @@ int main(){
                     al_draw_bitmap_region(background, 0, 400, remaining_width, Y_SCREEN, first_region_width, 0, 0);
                 }
 
+                // desenha o chão
                 for (int x = 0; x < X_SCREEN; x += tile_w) {
                     al_draw_bitmap(ground_tile, x, Y_SCREEN - 20, 0);
                 }
@@ -334,6 +397,7 @@ int main(){
                 if(!boss_fight)
                     al_draw_textf(font, al_map_rgb(255, 165, 0), 400, 20, 0, "Inimigos Restantes: %d", raiders_vivos);
                 else{
+                    // barra de HP do boss
                     float hp_percent = (float)final_boss->stats->hp / BOSS_HP;
                     int current_width = hp_percent * BOSS_BAR_WIDTH;
                     al_draw_filled_rectangle(BOSS_BAR_X, BOSS_BAR_Y, BOSS_BAR_X + BOSS_BAR_WIDTH, BOSS_BAR_Y + BOSS_BAR_HEIGHT, al_map_rgb(50, 50, 50));
@@ -352,7 +416,10 @@ int main(){
                 int draw_w = frame_w * scale;
                 int draw_h = frame_h * scale;
                 //al_draw_filled_rectangle(draw_x - player->width/2, player->y - player->height/2, draw_x + player->width/2, player->y + player->height/2, al_map_rgb(255, 0, 0));
-                al_draw_scaled_bitmap(player_sprites[player->sprite], sx, 28, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+                if(player->sprite == 4)
+                    al_draw_bitmap(player_sprites[player->sprite], draw_x - player->width/2 - 30, player->y - player->height/2 - 20, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
+                else
+                    al_draw_scaled_bitmap(player_sprites[player->sprite], sx, 28, frame_w, frame_h, draw_x - draw_w / 2, player->y - draw_h / 2, draw_w, draw_h, player->face ? 0 : ALLEGRO_FLIP_HORIZONTAL);
 
                 draw_x = final_boss->stats->x - final_boss->stats->width/2 - camera_x;
                 draw_y = final_boss->stats->y - final_boss->stats->height/2;
@@ -374,7 +441,7 @@ int main(){
                     }
                 }     
 
-                game = raiders_bullets_collision(player, raiders, N_RAIDERS);
+                game = raiders_bullets_collision(player, raiders, N_RAIDERS, difficulty);
 
                 // desenha os raiders e suas balas
                 for(int i = 0; i < N_RAIDERS; i++){
@@ -396,7 +463,7 @@ int main(){
                     }
                 }
 
-                boss_bullets_collision(player, final_boss);
+                boss_bullets_collision(player, final_boss, difficulty);
 
                 // desenha as balas do boss
                 for(bullet *index = final_boss->rifle->shots; index != NULL; index = index->next){
@@ -421,10 +488,11 @@ int main(){
                     player->rifle->timer--;
                 al_flip_display();
             }
+            // menu de pause
             else{
                 al_draw_filled_rectangle(0, 0, X_SCREEN, Y_SCREEN, al_map_rgba(0, 0, 0, 128));
-                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN / 2, Y_SCREEN / 2 - 40, ALLEGRO_ALIGN_CENTER, "PAUSADO");
-                al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN / 2, Y_SCREEN / 2 + 40, ALLEGRO_ALIGN_CENTER, "Pressione ENTER para continuar");
+                al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN / 2, Y_SCREEN / 2 - 80, ALLEGRO_ALIGN_CENTER, "PAUSADO");
+                al_draw_text(font, al_map_rgb(255, 165, 0), X_SCREEN / 2, Y_SCREEN / 2, ALLEGRO_ALIGN_CENTER, "Pressione ENTER para continuar");
                 al_flip_display();
             }
         }
@@ -450,24 +518,26 @@ int main(){
             break;
     }
 
+    // menu de fim de jogo
     if(!player->hp || win){
         while(1){
             al_wait_for_event(queue, &event);
 
             if(event.type == ALLEGRO_EVENT_TIMER){
                 al_clear_to_color(al_map_rgb(0, 0, 0));
-                
+                // menu de vitória
                 if(win){
-                    al_draw_text(font, al_map_rgb(0, 255, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 40, 0, "GANHOU!");
-                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 250, Y_SCREEN/2 + 40, 0, "Pressione ENTER para sair");
+                    al_draw_text(font, al_map_rgb(0, 255, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 80, 0, "GANHOU!");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 250, Y_SCREEN/2, 0, "Pressione ENTER para sair");
                 }
+                // menu de game over
                 else{
-                    al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 40, 0, "GAME OVER");
-                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 250, Y_SCREEN/2 + 40, 0, "Pressione ENTER para sair");
+                    al_draw_text(font, al_map_rgb(255, 0, 0), X_SCREEN/2 - 80, Y_SCREEN/2 - 80, 0, "GAME OVER");
+                    al_draw_text(font, al_map_rgb(255, 255, 255), X_SCREEN/2 - 250, Y_SCREEN/2, 0, "Pressione ENTER para sair");
                 }
                 al_flip_display();
             }
-
+            // fechar o jogo
             else if((event.type == ALLEGRO_EVENT_KEY_DOWN && event.keyboard.keycode == ALLEGRO_KEY_ENTER) || event.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
                 break;
             }

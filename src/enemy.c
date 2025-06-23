@@ -129,7 +129,7 @@ void raider_update_bullets(raider *element, unsigned short min_x, unsigned short
     }
 }
 
-int raiders_bullets_collision(character *player, raider **raiders, unsigned short n_raiders){
+int raiders_bullets_collision(character *player, raider **raiders, unsigned short n_raiders, unsigned short damage){
     if(!player->hp)
         return 0;
 
@@ -140,16 +140,16 @@ int raiders_bullets_collision(character *player, raider **raiders, unsigned shor
         bullet *current = raiders[i]->rifle->shots;
         bullet *previous = NULL;
 
-        while (current) {
+        while(current){
             bullet *next = (bullet*) current->next;
 
-            if (character_hit_bullet(player, current)) {
-                if(player->hp == 1){
-                    player->hp--;
+            if(character_hit_bullet(player, current)){
+                if(player->hp <= damage){
+                    player->hp = 0;
                     return 0;
                 }
 
-                player->hp--;
+                player->hp -= damage;
 
                 // Remover bala
                 if(previous)
@@ -159,7 +159,7 @@ int raiders_bullets_collision(character *player, raider **raiders, unsigned shor
 
                 bullet_destroy(current);
             } 
-            else {
+            else{
                 previous = current;
             }
 
@@ -238,6 +238,13 @@ int boss_detect_character(boss *element, character *player){
     return 0;
 }
 
+void boss_move(boss *element){
+    if(element->stage)
+        element->stats->x += 2;
+    else
+        element->stats->x -= 2;
+}
+
 void boss_shot(boss *element){
     bullet *shot1, *shot2;
 
@@ -251,16 +258,6 @@ void boss_shot(boss *element){
             shot2 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y + element->stats->y/8, element->stats->face, element->rifle);
         }
     }
-/*  else if(element->stage == 1){
-        if(!element->stats->face){
-            shot1 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y - element->stats->y/8, element->stats->face, element->rifle);
-            shot2 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y + element->stats->y/8, element->stats->face, element->rifle);
-        }
-        else if(element->stats->face == 1){
-            shot1 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y - element->stats->y/8, element->stats->face, element->rifle);
-            shot2 = gun_shot(element->stats->x + element->stats->width/2, element->stats->y + element->stats->y/8, element->stats->face, element->rifle);
-        }
-    } */
     else if(element->stage == 1){
         if(!element->stats->face){
             shot1 = gun_shot(element->stats->x - element->stats->width/2, element->stats->y, element->stats->face, element->rifle);
@@ -283,6 +280,27 @@ void boss_shot(boss *element){
     }
 
     element->shot_timer = RAIDER_SHOT_DELAY;
+}
+
+int boss_collision(boss *element, character *player) {
+    // limites do boss
+    unsigned short boss_left = element->stats->x - element->stats->width / 2;
+    unsigned short boss_right = element->stats->x + element->stats->width / 2;
+    unsigned short boss_top = element->stats->y - element->stats->height / 2;
+    unsigned short boss_bottom = element->stats->y + element->stats->height / 2;
+
+    // limites do player
+    unsigned short player_left = player->x - player->width / 2;
+    unsigned short player_right = player->x + player->width / 2;
+    unsigned short player_top = player->y - player->height / 2;
+    unsigned short player_bottom = player->y + player->height / 2;
+
+    // Verifica colisão
+    if(boss_right > player_left && boss_left < player_right && boss_bottom > player_top && boss_top < player_bottom){
+        return 1; // Há colisão
+    }
+
+    return 0; // Sem colisão
 }
 
 int boss_hit_bullet(boss *element, bullet *shot){
@@ -317,7 +335,7 @@ void boss_update_bullets(boss *element, unsigned short min_x, unsigned short max
     }
 }
 
-int boss_bullets_collision(character *player, boss *final_boss){
+int boss_bullets_collision(character *player, boss *final_boss, unsigned short damage){
     if(!player->hp)
         return 0;
 
@@ -328,12 +346,12 @@ int boss_bullets_collision(character *player, boss *final_boss){
         next = (bullet*) index->next;                
 
         if(character_hit_bullet(player, index)) {
-            if(player->hp == 1){
-                player->hp--;
+            if(player->hp <= damage){
+                player->hp = 0;
                 return 0;
             }
 
-            player->hp--;
+            player->hp -= damage;
             gun_bullet_remove(final_boss->rifle, index);
         }
         index = next;
